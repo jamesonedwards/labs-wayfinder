@@ -4,16 +4,22 @@
 #include "cinder/gl/Texture.h"
 
 #include "CinderOpenCv.h"
+#include "Destination.h"
+#include <vector>
 
 using namespace ci;
 using namespace ci::app;
+using namespace std;
 
 class WayFinderApp : public AppNative {
-  public:
+public:
 	void setup();
 	void draw();
 	
 	gl::Texture	mTexture;
+
+private:
+	std::vector<Destination> destinations;
 };
 
 void WayFinderApp::setup()
@@ -30,6 +36,9 @@ void WayFinderApp::setup()
 //	cv::threshold( input, output, 128, 255, CV_8U );
 
 	mTexture = gl::Texture( fromOcv( output ) );
+
+	destinations = Destination::getDestinations();
+	int cnt = destinations.size();
 }   
 
 void WayFinderApp::draw()
