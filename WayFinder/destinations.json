@@ -1,0 +1,14 @@
+{
+	"destinations" : [
+		{
+			"name" : "Destination 1",
+			"x" : 10,
+			"y" : 15
+		},
+		{
+			"name" : "Destination 2",
+			"x" : 20,
+			"y" : 10
+		}
+	]
+}
