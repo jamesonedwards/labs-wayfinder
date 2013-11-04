@@ -38,7 +38,10 @@ void WayFinderApp::setup()
 	mTexture = gl::Texture( fromOcv( output ) );
 
 	destinations = Destination::getDestinations();
-	int cnt = destinations.size();
+	if (destinations.size() == 0) {
+		app::console() << "No destinations found, check the config file." << std::endl;
+		exit(EXIT_FAILURE);
+	}
 }   
 
 void WayFinderApp::draw()

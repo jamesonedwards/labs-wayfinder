@@ -2,7 +2,7 @@
 class Destination
 {
 	public:
-		//Destination(void);
+		Destination(void);
 		Destination(std::string, float, float);
 		~Destination(void);
 		std::string getName();
