@@ -7,8 +7,13 @@
 		},
 		{
 			"name" : "Destination 2",
-			"x" : 20,
-			"y" : 10
+			"x" : 200,
+			"y" : 100
+		},
+		{
+			"name" : "Destination 3",
+			"x" : 600,
+			"y" : 300
 		}
 	]
 }

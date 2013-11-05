@@ -13,41 +13,71 @@ using namespace std;
 
 class WayFinderApp : public AppNative {
 public:
-	void setup();
-	void draw();
-	
-	gl::Texture	mTexture;
+    void prepareSettings(Settings *);
+    void setup();
+    void update();
+    void draw();
+
+    gl::Texture	mTexture;
 
 private:
-	std::vector<Destination> destinations;
+    void println(const std::string&);
+    void guide();
+
+    std::vector<Destination> destinations;
+    cinder::Vec2f spotlightCenter;
+    float spotlightRadius;
 };
+
+void WayFinderApp::prepareSettings(Settings *settings)
+{
+    settings->setWindowSize(800, 600);
+    settings->setFrameRate(60.0f);
+}
 
 void WayFinderApp::setup()
 {
-	// The included image is copyright Trey Ratcliff
-	// http://www.flickr.com/photos/stuckincustoms/4045813826/
-	
-	ci::Surface8u surface( loadImage( loadAsset( "dfw.jpg" ) ) );
-	cv::Mat input( toOcv( surface ) );
-	cv::Mat output;
+    println("WayFinderApp started.");
 
-	cv::medianBlur( input, output, 11 );
-//	cv::Sobel( input, output, CV_8U, 0, 1 ); 
-//	cv::threshold( input, output, 128, 255, CV_8U );
+    // Load destinations from config file.
+    destinations = Destination::getDestinations();
+    if(destinations.size() == 0) {
+        println("No destinations found, check the config file.");
+        exit(EXIT_FAILURE);
+    }
+    println("Destinations loaded.");
 
-	mTexture = gl::Texture( fromOcv( output ) );
+    // Initialized spotlight.
+    spotlightRadius = 50.0f;
+    spotlightCenter = Vec2f(getWindowWidth() / 2, getWindowHeight() / 2);
+}
 
-	destinations = Destination::getDestinations();
-	if (destinations.size() == 0) {
-		app::console() << "No destinations found, check the config file." << std::endl;
-		exit(EXIT_FAILURE);
-	}
-}   
+void WayFinderApp::update()
+{
+}
 
 void WayFinderApp::draw()
 {
-	gl::clear();
-	gl::draw( mTexture );
+    gl::clear();
+
+    // TODO: Add state machine (struct?): detecting, guiding.
+    guide();
 }
 
-CINDER_APP_NATIVE( WayFinderApp, RendererGl )
+void WayFinderApp::guide()
+{
+    // Draw the spotlight, centered around the detected location.
+    gl::drawSolidCircle(spotlightCenter, spotlightRadius);
+
+    // Draw a vector from the spotlight center to each of the destinations.
+    for(vector<Destination>::iterator iter = destinations.begin(); iter != destinations.end(); ++iter) {
+
+    }
+}
+
+void WayFinderApp::println(const std::string& msg)
+{
+    app::console() << msg << std::endl;
+}
+
+CINDER_APP_NATIVE(WayFinderApp, RendererGl)
