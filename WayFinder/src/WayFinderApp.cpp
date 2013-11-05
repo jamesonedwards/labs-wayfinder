@@ -51,8 +51,8 @@ void WayFinderApp::setup()
     println("Destinations loaded.");
 
     // Initialized spotlight.
-    float spotlightRadius = 50.0f;
-    float arrowLength = 50.0f;
+    spotlightRadius = 50.0f;
+    arrowLength = 50.0f;
     spotlightCenter = Vec2f(getWindowWidth() / 2, getWindowHeight() / 2);
     spotlightCenter3D = Vec3f(getWindowWidth() / 2, getWindowHeight() / 2, 0.0f);
 }
@@ -63,7 +63,7 @@ void WayFinderApp::update()
 
 void WayFinderApp::draw()
 {
-    gl::clear();
+    gl::clear(Color(0, 0, 0));
 
     // TODO: Add state machine (struct?): detecting, guiding.
     guide();
