@@ -25,8 +25,11 @@ private:
     void guide();
 
     std::vector<Destination> destinations;
-    cinder::Vec2f spotlightCenter;
+    // HACK: Need to figure out a better way to maintain center state.
+    ci::Vec2f spotlightCenter;
+    ci::Vec3f spotlightCenter3D; // 3D vector is required for drawVector.
     float spotlightRadius;
+    float arrowLength;
 };
 
 void WayFinderApp::prepareSettings(Settings *settings)
@@ -48,8 +51,10 @@ void WayFinderApp::setup()
     println("Destinations loaded.");
 
     // Initialized spotlight.
-    spotlightRadius = 50.0f;
+    float spotlightRadius = 50.0f;
+    float arrowLength = 50.0f;
     spotlightCenter = Vec2f(getWindowWidth() / 2, getWindowHeight() / 2);
+    spotlightCenter3D = Vec3f(getWindowWidth() / 2, getWindowHeight() / 2, 0.0f);
 }
 
 void WayFinderApp::update()
@@ -69,9 +74,11 @@ void WayFinderApp::guide()
     // Draw the spotlight, centered around the detected location.
     gl::drawSolidCircle(spotlightCenter, spotlightRadius);
 
+    // TODO: Vectors should be of uniform length. Need a point *along* the vector at a predefined distance from the start point: http://stackoverflow.com/questions/1800138/given-a-start-and-end-point-and-a-distance-calculate-a-point-along-a-line
+
     // Draw a vector from the spotlight center to each of the destinations.
     for(vector<Destination>::iterator iter = destinations.begin(); iter != destinations.end(); ++iter) {
-
+        gl::drawVector(spotlightCenter3D, iter->getVector(), 5.0f, 10.0f);
     }
 }
 
