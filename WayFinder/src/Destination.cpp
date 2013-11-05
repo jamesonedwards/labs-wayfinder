@@ -60,8 +60,7 @@ vector<Destination> Destination::getDestinations()
 	// Initialize the destinations vector if not already initialized.
 	if (Destination::destinations.size() == 0) {
 		// Load destinations from config file.
-		// TODO: Need to make this path system-independent!
-		string configPath = "C:\\Dev\\labs-wayfinder\\src\\c\\WayFinder\\destinations.json";
+		string configPath = "destinations.json";
 		fs::path path(configPath);
 		if(fs::exists(path))
 		{

@@ -1,7 +1,11 @@
-
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Express 2012 for Windows Desktop
+# Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WayFinder", "WayFinder.vcxproj", "{853C21B5-9631-481E-AFE8-DEBA9BE98D52}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D3CA6A52-1AB0-4B67-89F2-E9EB9AC1D3F0}"
+	ProjectSection(SolutionItems) = preProject
+		destinations.json = destinations.json
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
