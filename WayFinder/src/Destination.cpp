@@ -17,13 +17,14 @@ Destination::Destination(void)
 Destination::Destination(string name, float x, float y)
 {
     this->name = name;
-    this->vector = Vec3f(x, y, 0.0f);
+    this->vector2d = Vec2f(x, y);
+    this->vector3d = Vec3f(x, y, 0.0f);
 }
 
 Destination::Destination(string name, Vec3f vector)
 {
     this->name = name;
-    this->vector = vector;
+    this->setVector(vector);
 }
 
 Destination::~Destination(void)
@@ -40,14 +41,20 @@ void Destination::setName(string name)
     this->name = name;
 }
 
-Vec3f Destination::getVector()
+Vec2f Destination::getVector2D()
 {
-    return this->vector;
+    return this->vector2d;
+}
+
+Vec3f Destination::getVector3D()
+{
+    return this->vector3d;
 }
 
 void Destination::setVector(Vec3f vector)
 {
-    this->vector = vector;
+    this->vector2d = Vec2d(vector.x, vector.y);
+    this->vector3d = vector;
 }
 
 vector<Destination> Destination::getDestinations()

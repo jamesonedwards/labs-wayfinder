@@ -2,18 +2,18 @@
 	"destinations" : [
 		{
 			"name" : "Destination 1",
-			"x" : 10,
-			"y" : 15
+			"x" : 50,
+			"y" : 75
 		},
 		{
 			"name" : "Destination 2",
-			"x" : 200,
-			"y" : 100
+			"x" : 800,
+			"y" : 250
 		},
 		{
 			"name" : "Destination 3",
-			"x" : 600,
-			"y" : 300
+			"x" : 900,
+			"y" : 500
 		}
 	]
 }
