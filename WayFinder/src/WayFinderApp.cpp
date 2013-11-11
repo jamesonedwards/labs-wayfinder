@@ -32,8 +32,8 @@ private:
     float spotlightRadius;
     float arrowLength;
     bool detected;
-    static const int WIDTH = 1280;
-    static const int HEIGHT = 720;
+    static const int WIDTH = 320;
+    static const int HEIGHT = 180;
     static const int FRAME_COUNT_THRESHOLD = 10;
     int frameCount;
 
@@ -78,6 +78,9 @@ void WayFinderApp::setup()
     capture = Capture::create(WayFinderApp::WIDTH, WayFinderApp::HEIGHT);
     capture->start();
     hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
+
+    //cv::namedWindow("Frame");
+    //cv::namedWindow("Background");
 }
 
 void WayFinderApp::update()
@@ -96,6 +99,7 @@ void WayFinderApp::update()
     }
 }
 
+/*
 void WayFinderApp::mouseMove(MouseEvent event)
 {
     Vec2i pos = event.getPos();
@@ -108,6 +112,7 @@ void WayFinderApp::mouseMove(MouseEvent event)
         spotlightCenter2D = event.getPos();
     }
 }
+*/
 
 void WayFinderApp::draw()
 {
@@ -125,15 +130,6 @@ void WayFinderApp::draw()
 
 void WayFinderApp::detect()
 {
-    // TODO: http://www.researchgate.net/post/Detect_humans_using_OpenCV
-    // Use HOG detection in OpenCV. If a person is detected, and if they're considered "lost" then detected == true, else detected == false.
-
-    // TODO: Scrap HOG and use blob or motion detection instead!
-
-    // TODO: Split detection and drawing into two windows.
-
-    // TODO: Script the web cam resolution to improve performance.
-
     frameCount++;
 
     if(frameCount >= FRAME_COUNT_THRESHOLD) {
@@ -156,6 +152,10 @@ void WayFinderApp::detect()
 void WayFinderApp::guide()
 {
     // TODO: Scale spotlight radius based on size of detected rectangle.
+
+    // TODO: USE THIS APPROACH: http://www.codeproject.com/Articles/10248/Motion-Detection-Algorithms
+
+    // TODO: OR THIS APPROACH: http://mateuszstankiewicz.eu/?p=189
 
     // Draw the spotlight, centered around the detected location.
     gl::drawSolidCircle(spotlightCenter2D, spotlightRadius);
