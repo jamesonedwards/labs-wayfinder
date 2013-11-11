@@ -7,6 +7,9 @@
 #include "boost/lexical_cast.hpp"
 #include "Destination.h"
 #include <vector>
+#include<iostream>
+#include <opencv2/imgproc/imgproc.hpp>
+#include "cinder/app/KeyEvent.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -16,8 +19,9 @@ class WayFinderApp : public AppNative {
 public:
     void prepareSettings(Settings *);
     void setup();
+    void keyUp(KeyEvent);
     void update();
-    void mouseMove(MouseEvent);
+    //void mouseMove(MouseEvent);
     void draw();
 
 private:
@@ -32,25 +36,29 @@ private:
     float spotlightRadius;
     float arrowLength;
     bool detected;
-    static const int WIDTH = 320;
-    static const int HEIGHT = 180;
+    bool debugView;
+    static const int WIDTH = 640;
+    static const int HEIGHT = 360;
+    static const int FRAME_RATE = 30;
     static const int FRAME_COUNT_THRESHOLD = 10;
-    int frameCount;
 
-    // HOG Detection:
     cv::Mat src_img;
-    //cv::VideoCapture capture;
     CaptureRef capture;
     gl::Texture mTexture;
-    cv::HOGDescriptor hog;
-    cv::Mat mono_img;
-    vector<cv::Rect> found;
+
+
+    // Detection sample: http://mateuszstankiewicz.eu/?p=189
+    cv::Mat frame;
+    cv::Mat back;
+    cv::Mat fore;
+    cv::BackgroundSubtractorMOG2 bg;
+    std::vector<std::vector<cv::Point>> contours;
 };
 
 void WayFinderApp::prepareSettings(Settings *settings)
 {
     settings->setWindowSize(WayFinderApp::WIDTH, WayFinderApp::HEIGHT);
-    settings->setFrameRate(60.0f);
+    settings->setFrameRate(FRAME_RATE);
 }
 
 void WayFinderApp::setup()
@@ -70,32 +78,79 @@ void WayFinderApp::setup()
     arrowLength = 50.0f;
     spotlightCenter2D = Vec2f(getWindowWidth() / 2, getWindowHeight() / 2);
     detected = false;
-    frameCount = 0;
     //spotlightCenter3D = Vec3f(getWindowWidth() / 2, getWindowHeight() / 2, 0.0f);
 
-    // HOG Detection:
-    //capture = Capture(WayFinderApp::WIDTH, WayFinderApp::HEIGHT);
     capture = Capture::create(WayFinderApp::WIDTH, WayFinderApp::HEIGHT);
     capture->start();
-    hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
 
-    //cv::namedWindow("Frame");
-    //cv::namedWindow("Background");
+    //bg.set("bShadowDetection", false);
+    bg.set("nmixtures", 3);
+
+    debugView = false;
+}
+
+// Toggle btwn debug view and normal view.
+void WayFinderApp::keyUp(KeyEvent event)
+{
+    if(event.getChar() == KeyEvent::KEY_d) {
+        debugView = !debugView;
+    }
 }
 
 void WayFinderApp::update()
 {
+    detected = false;
+
+    // TODO: Consider converting capture to grayscale to improve performance.
     if(capture && capture->checkNewFrame()) {
-        cv::Mat input(toOcv(capture->getSurface())), output;
+        frame = toOcv(capture->getSurface());
+        //cv::Mat frameGray, frameBlurred, frameThresh, foreGray, backGray;
+        //cvtColor(frame, frameGray, CV_BGR2GRAY);
+        //int blurAmount = 10;
+        //cv::blur(frame, frameBlurred, cv::Size(blurAmount, blurAmount));
+        //threshold(frameBlurred, frameThresh, 100, 255, CV_THRESH_BINARY);
 
-        //cv::Sobel(input, output, CV_8U, 1, 0);
-        //cv::threshold(input, output, 128, 255, CV_8U);
-        //cv::Laplacian(input, output, CV_8U);
-        //cv::circle(output, toOcv(Vec2f(200, 200)), 300, toOcv(Color(0, 0.5f, 1)), -1);
-        //cv::line(output, cv::Point(1, 1), cv::Point(30, 30), toOcv(Color(1, 0.5f, 0)));
+        // Get all contours.
+        bg.operator()(frame,fore);
+        bg.getBackgroundImage(back);
+        cv::erode(fore, fore, cv::Mat());
+        cv::dilate(fore, fore, cv::Mat());
+        cv::findContours(fore, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
 
-        mTexture = gl::Texture(fromOcv(input));
-        //mTexture = gl::Texture(fromOcv(output));
+        // Get largest contour: http://stackoverflow.com/questions/15012073/opencv-draw-draw-contours-of-2-largest-objects
+        int largestIndex = 0;
+        int largestContour = 0;
+        for(int i = 0; i< contours.size(); i++) {
+            if(contours[i].size() > largestContour) {
+                largestContour = contours[i].size();
+                largestIndex = i;
+            }
+        }
+        vector<std::vector<cv::Point>> hack;
+        hack.push_back(contours[largestIndex]);
+
+        // Find bounding rectangle for largest countour.
+        cv::Rect rect = boundingRect(contours[largestIndex]);
+
+        // Get center of rectangle.
+        cv::Point center = cv::Point(
+                               rect.x + (rect.width / 2),
+                               rect.y + (rect.height / 2)
+                           );
+
+        // Show guide.
+        spotlightCenter2D.x = center.x;
+        spotlightCenter2D.y = center.y;
+        //spotlightRadius = (rect.width + rect.y) / 2;
+        detected = true;
+
+        if(debugView) {
+            cv::drawContours(frame, contours, -1, cv::Scalar(0, 0, 255), 2);
+            cv::drawContours(frame, hack, -1, cv::Scalar(255, 0, 0), 2);
+            rectangle(frame, rect, cv::Scalar(0, 255, 0), 3);
+            circle(frame, center, 10, cv::Scalar(0, 255, 0), 3);
+            mTexture = gl::Texture(fromOcv(frame));
+        }
     }
 }
 
@@ -130,22 +185,11 @@ void WayFinderApp::draw()
 
 void WayFinderApp::detect()
 {
-    frameCount++;
-
-    if(frameCount >= FRAME_COUNT_THRESHOLD) {
+    if(getElapsedFrames() % FRAME_COUNT_THRESHOLD == 0) {
         cv::Mat src_img(toOcv(capture->getSurface()));
-        cv::cvtColor(src_img, mono_img, CV_BGR2GRAY);
-        hog.detectMultiScale(mono_img, found);
-        detected = false;
 
-        for(unsigned i = 0; i < found.size(); i++) {
-            cv::Rect r = found[i];
-            rectangle(src_img, r.tl(), r.br(), cv::Scalar(0,255,0), 2);
 
-            detected = true;
-            spotlightCenter2D = Vec2f(r.x, r.y);
-        }
-        //cv::imshow("test", src_img);
+
     }
 }
 
