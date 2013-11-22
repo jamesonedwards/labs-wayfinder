@@ -21,7 +21,11 @@ http://www.codeproject.com/Articles/10248/Motion-Detection-Algorithms
 http://mateuszstankiewicz.eu/?p=189
 http://stackoverflow.com/questions/1800138/given-a-start-and-end-point-and-a-distance-calculate-a-point-along-a-line
 http://math.stackexchange.com/questions/175896/finding-a-point-along-a-line-a-certain-distance-away-from-another-point
+Not used but possibly important: http://www.codeproject.com/Articles/3274/Drawing-Arrows
 */
+
+// TODO: Add sound when guide is shown ("whom" sci-fi door sound, followed  by "warm glow" while shown)
+// TODO: Add a subtle undulating effect to circle
 
 class WayFinderApp : public AppNative {
 public:
@@ -46,6 +50,8 @@ private:
     bool debugView;
     static const int WIDTH = 640;
     static const int HEIGHT = 360;
+    //static const int WIDTH = 1280;
+    //static const int HEIGHT = 720;
     static const int FRAME_RATE = 30;
     static const int FRAME_COUNT_THRESHOLD = 10;
 
@@ -64,7 +70,7 @@ private:
 void WayFinderApp::prepareSettings(Settings *settings)
 {
     settings->setWindowSize(WayFinderApp::WIDTH, WayFinderApp::HEIGHT);
-    settings->setFrameRate(FRAME_RATE);
+    settings->setFrameRate((float)FRAME_RATE);
 }
 
 void WayFinderApp::setup()
@@ -80,17 +86,19 @@ void WayFinderApp::setup()
     println("Destinations loaded.");
 
     // Initialized state.
-    spotlightRadius = getWindowWidth() / 16;
-    arrowLength = min(getWindowWidth(), getWindowHeight()) / 2;
-    spotlightCenter2D = Vec2f(getWindowWidth() / 2, getWindowHeight() / 2);
-    spotlightCenter3D = Vec3f(getWindowWidth() / 2, getWindowHeight() / 2, 0.0f);
+    spotlightRadius = (float)getWindowWidth() / 16.0f;
+    arrowLength = (float)min(getWindowWidth(), getWindowHeight()) / 2.0f;
+    spotlightCenter2D = Vec2f((float)getWindowWidth() / 2.0f, (float)getWindowHeight() / 2.0f);
+    spotlightCenter3D = Vec3f((float)getWindowWidth() / 2.0f, (float)getWindowHeight() / 2.0f, 0.0f);
     detected = false;
 
-    capture = Capture::create(WayFinderApp::WIDTH, WayFinderApp::HEIGHT);
+    //capture = Capture::create(WayFinderApp::WIDTH, WayFinderApp::HEIGHT);
+    capture = Capture::create(getWindowWidth(), getWindowHeight());
     capture->start();
 
     //bg.set("bShadowDetection", false);
     bg.set("nmixtures", 3);
+    bg.setBool("detectShadows", true);
 
     debugView = false;
 }
@@ -114,52 +122,65 @@ void WayFinderApp::update()
             frame = toOcv(capture->getSurface());
             //cv::Mat frameGray, frameBlurred, frameThresh, foreGray, backGray;
             //cvtColor(frame, frameGray, CV_BGR2GRAY);
-            //int blurAmount = 10;
+            int blurAmount = 10;
             //cv::blur(frame, frameBlurred, cv::Size(blurAmount, blurAmount));
             //threshold(frameBlurred, frameThresh, 100, 255, CV_THRESH_BINARY);
 
             // Get all contours.
-            bg.operator()(frame,fore);
+            //bg.operator()(frameThresh,fore);
+            bg.operator()(frame, fore);
             bg.getBackgroundImage(back);
             cv::erode(fore, fore, cv::Mat());
             cv::dilate(fore, fore, cv::Mat());
             cv::findContours(fore, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
 
             // Get largest contour: http://stackoverflow.com/questions/15012073/opencv-draw-draw-contours-of-2-largest-objects
-            int largestIndex = 0;
-            int largestContour = 0;
-            for(int i = 0; i< contours.size(); i++) {
+            unsigned largestIndex = 0;
+            unsigned largestContour = 0;
+            for(unsigned i = 0; i < contours.size(); i++) {
                 if(contours[i].size() > largestContour) {
                     largestContour = contours[i].size();
                     largestIndex = i;
                 }
             }
+
             vector<std::vector<cv::Point>> hack;
-            hack.push_back(contours[largestIndex]);
+            cv::Rect rect;
+            cv::Point center;
 
-            // Find bounding rectangle for largest countour.
-            cv::Rect rect = boundingRect(contours[largestIndex]);
+            if(contours.size() > 0) {
+                hack.push_back(contours[largestIndex]);
 
-            // Get center of rectangle.
-            cv::Point center = cv::Point(
-                                   rect.x + (rect.width / 2),
-                                   rect.y + (rect.height / 2)
-                               );
+                // Find bounding rectangle for largest countour.
+                rect = boundingRect(contours[largestIndex]);
 
-            // Show guide.
-            spotlightCenter2D.x = center.x;
-            spotlightCenter2D.y = center.y;
-            spotlightCenter3D.x = center.x;
-            spotlightCenter3D.y = center.y;
-            //spotlightRadius = (rect.width + rect.y) / 2;
-            detected = true;
+                // Make sure the blog is large enough to be a track-worthy.
+                println("Rext area = " + boost::lexical_cast<std::string>(rect.area()));
+                if(rect.area() >= 5000) { // TODO: Tweak this value.
+                    // Get center of rectangle.
+                    center = cv::Point(
+                                 rect.x + (rect.width / 2),
+                                 rect.y + (rect.height / 2)
+                             );
+
+                    // Show guide.
+                    spotlightCenter2D.x = (float)center.x;
+                    spotlightCenter2D.y = (float)center.y;
+                    spotlightCenter3D.x = (float)center.x;
+                    spotlightCenter3D.y = (float)center.y;
+                    //spotlightRadius = (rect.width + rect.y) / 2;
+                    detected = true;
+                }
+            }
 
             // When debug mode is off, the background should be black.
             if(debugView) {
-                cv::drawContours(frame, contours, -1, cv::Scalar(0, 0, 255), 2);
-                cv::drawContours(frame, hack, -1, cv::Scalar(255, 0, 0), 2);
-                rectangle(frame, rect, cv::Scalar(0, 255, 0), 3);
-                circle(frame, center, 10, cv::Scalar(0, 255, 0), 3);
+                if(contours.size() > 0) {
+                    cv::drawContours(frame, contours, -1, cv::Scalar(0, 0, 255), 2);
+                    cv::drawContours(frame, hack, -1, cv::Scalar(255, 0, 0), 2);
+                    rectangle(frame, rect, cv::Scalar(0, 255, 0), 3);
+                    circle(frame, center, 10, cv::Scalar(0, 255, 0), 3);
+                }
                 mTexture = gl::Texture(fromOcv(frame));
             }
         }
@@ -190,7 +211,12 @@ ci::Vec2f WayFinderApp::calculateLinePoint(ci::Vec2f start, ci::Vec2f end, float
 void WayFinderApp::guide()
 {
     // Draw the spotlight, centered around the detected location.
+    gl::color(255, 255, 255);
     gl::drawSolidCircle(spotlightCenter2D, spotlightRadius);
+    gl::color(0, 0, 0);
+    gl::drawSolidCircle(spotlightCenter2D, spotlightRadius * 2 / 3);
+    //gl::drawStrokedCircle(spotlightCenter2D, spotlightRadius);
+    gl::color(255, 255, 255);
 
     for(vector<Destination>::iterator iter = destinations.begin(); iter != destinations.end(); ++iter) {
         // Vectors should be of uniform length. Need a point *along* the vector at a predefined distance from the start point.
